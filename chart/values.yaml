@@ -1,0 +1,116 @@
+global:
+  domain: null
+  imagePullSecret:
+    {}
+srv:
+  bindings:
+    auth:
+      serviceInstanceName: xsuaa
+    messaging:
+      serviceInstanceName: event-mesh
+    service-manager:
+      serviceInstanceName: service-manager
+  image:
+    repository: <your-container-registry>/hc-off_supplies-srv
+    tag: latest
+  resources:
+    limits:
+      ephemeral-storage: 1G
+      memory: 500M
+    requests:
+      ephemeral-storage: 1G
+      cpu: 500m
+      memory: 500M
+  health:
+    liveness:
+      path: /
+    readiness:
+      path: /
+sidecar:
+  bindings:
+    auth:
+      serviceInstanceName: xsuaa
+    saas-registry:
+      serviceInstanceName: saas-registry
+    service-manager:
+      serviceInstanceName: service-manager
+  image:
+    repository: <your-container-registry>/hc-off_supplies-sidecar
+    tag: latest
+  resources:
+    limits:
+      ephemeral-storage: 1G
+      memory: 500M
+    requests:
+      ephemeral-storage: 1G
+      cpu: 500m
+      memory: 500M
+  health:
+    liveness:
+      path: /
+    readiness:
+      path: /
+  envFrom:
+    - configMapRef:
+        name: "{{ .Release.Name }}-mtxs-configmap"
+approuter:
+  bindings:
+    auth:
+      serviceInstanceName: xsuaa
+  image:
+    repository: <your-container-registry>/hc-off_supplies-approuter
+    tag: latest
+  resources:
+    limits:
+      ephemeral-storage: 1G
+      memory: 500M
+    requests:
+      ephemeral-storage: 1G
+      cpu: 500m
+      memory: 500M
+  health:
+    liveness:
+      path: /
+    readiness:
+      path: /
+  envFrom:
+    - configMapRef:
+        name: "{{ .Release.Name }}-approuter-configmap"
+xsuaa:
+  serviceOfferingName: xsuaa
+  servicePlanName: application
+  parameters:
+    xsappname: hc-off_supplies
+    tenant-mode: shared
+    oauth2-configuration:
+      redirect-uris:
+        - https://*.<your-cluster-domain>/**
+event-mesh:
+  serviceOfferingName: enterprise-messaging
+  servicePlanName: default
+service-manager:
+  serviceOfferingName: service-manager
+  servicePlanName: container
+saas-registry:
+  serviceOfferingName: saas-registry
+  servicePlanName: application
+  parametersFrom:
+    - secretKeyRef:
+        name: "{{ .Release.Name }}-saas-registry-secret"
+        key: parameters
+saasRegistryParameters:
+  xsappname: hc-off_supplies
+  appName: hc-off_supplies
+  displayName: hc-off_supplies
+  description: A simple CAP project.
+  category: "CAP Application"
+  bindSidecar: true
+  appUrls:
+    getDependencies: "/-/cds/saas-provisioning/dependencies"
+    onSubscription: "/-/cds/saas-provisioning/tenant/{tenantId}"
+    onSubscriptionAsync: true
+    onUnSubscriptionAsync: true
+    onUpdateDependenciesAsync: true
+    callbackTimeoutMillis: 300000
+backendDestinations:
+  {}
